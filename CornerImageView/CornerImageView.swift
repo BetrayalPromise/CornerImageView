@@ -1,9 +1,6 @@
 import UIKit
 
 public class CornerImageView: UIImageView {
-    private struct Associated {
-        static var kObserverImage: String = "kObserverImage"
-    }
     /// 圆角半径
     private var cornerRadius: CGFloat = 0
     /// 圆角位置
@@ -21,21 +18,21 @@ public class CornerImageView: UIImageView {
         let cornerRadii = CGSize(width: cornerRadius, height: cornerRadius)
         UIGraphicsBeginImageContextWithOptions(size, false, scale)
         guard let currentContext: CGContext = UIGraphicsGetCurrentContext() else { return }
-        
+
         let cornerPath = UIBezierPath(roundedRect: bounds, byRoundingCorners: rectCornerType, cornerRadii: cornerRadii)
         cornerPath.addClip()
         layer.render(in: currentContext)
         self.drawBorder(cornerPath)
         guard let processedImage: UIImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
         UIGraphicsEndImageContext()
-        objc_setAssociatedObject(processedImage, &Associated.kObserverImage, 1, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        objc_setAssociatedObject(processedImage, NSStringFromClass(CornerImageView.self), 1, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         self.image = processedImage
     }
     
     private func drawBorder(_ path: UIBezierPath) {
-        if borderWidth != 0 {
-            path.lineWidth = 2 * borderWidth
-            borderColor?.setStroke()
+        if self.borderWidth != 0 {
+            path.lineWidth = 2 * self.borderWidth
+            self.borderColor?.setStroke()
             path.stroke()
         }
     }
@@ -48,19 +45,16 @@ public class CornerImageView: UIImageView {
             self.addObserver(self, forKeyPath: "image", options: .new, context: nil)
             self.isHadAddObserver = true
         }
-        layoutIfNeeded()
+        self.layoutIfNeeded()
     }
     
     open override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if (keyPath == "image") {
             guard let newImage: UIImage = change?[.newKey] as? UIImage else { return }
-            if type(of: newImage) === NSNull.self {
-                return
-            } else if (objc_getAssociatedObject(newImage, &Associated.kObserverImage) as? Int) == 1 {
+            if type(of: newImage) === NSNull.self || (objc_getAssociatedObject(newImage, NSStringFromClass(CornerImageView.self)) as? Int) == 1 {
                 return
             }
-            
-            if isRounding {
+            if self.isRounding {
                 self.cornerRadius(with: newImage, cornerRadius: frame.size.width / 2, rectCornerType: .allCorners)
             } else if self.cornerRadius != 0 && self.cornerPosition != nil {
                 self.cornerRadius(with: newImage, cornerRadius: self.cornerRadius, rectCornerType: self.cornerPosition!)
@@ -68,7 +62,7 @@ public class CornerImageView: UIImageView {
         }
     }
     
-    public convenience init(frame: CGRect, cornerRadius: CGFloat, cornerPositon: UIRectCorner?, borderColor: UIColor?, borderWidth: CGFloat) {
+    public convenience init(frame: CGRect, cornerRadius: CGFloat = 5.0, cornerPositon: UIRectCorner = .allCorners, borderColor: UIColor? = .clear, borderWidth: CGFloat = 0.0) {
         self.init(frame: frame)
         self.borderWidth = borderWidth
         self.borderColor = borderColor
@@ -87,5 +81,4 @@ public class CornerImageView: UIImageView {
             self.removeObserver(self, forKeyPath: "image")
         }
     }
-
 }
