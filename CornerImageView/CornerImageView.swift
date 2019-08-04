@@ -1,44 +1,34 @@
-//
-//  CornerImageView.swift
-//  UIImageView
-//
-//  Created by 李阳 on 21/7/2017.
-//  Copyright © 2017 qms. All rights reserved.
-//
-
 import UIKit
 
-class CornerImageView: UIImageView {
-    
+public class CornerImageView: UIImageView {
     private struct Associated {
-        static var kObserverImage = "kObserverImage"
+        static var kObserverImage: String = "kObserverImage"
     }
-
+    /// 圆角半径
     private var cornerRadius: CGFloat = 0
+    /// 圆角位置
     private var cornerPosition: UIRectCorner? = nil
+    /// 边框宽度
     private var borderWidth: CGFloat = 0
+    /// 边框颜色
     private var borderColor: UIColor? = UIColor.clear
     private var isHadAddObserver: Bool = false
     private var isRounding: Bool = false
     
     private func cornerRadius(with image: UIImage, cornerRadius: CGFloat, rectCornerType: UIRectCorner) {
-        let size: CGSize = bounds.size
+        let size: CGSize = self.bounds.size
         let scale: CGFloat = UIScreen.main.scale
         let cornerRadii = CGSize(width: cornerRadius, height: cornerRadius)
         UIGraphicsBeginImageContextWithOptions(size, false, scale)
-        guard let currentContext: CGContext = UIGraphicsGetCurrentContext() else {
-            return
-        }
+        guard let currentContext: CGContext = UIGraphicsGetCurrentContext() else { return }
         
         let cornerPath = UIBezierPath(roundedRect: bounds, byRoundingCorners: rectCornerType, cornerRadii: cornerRadii)
         cornerPath.addClip()
         layer.render(in: currentContext)
         self.drawBorder(cornerPath)
-        let processedImage: UIImage? = UIGraphicsGetImageFromCurrentImageContext()
+        guard let processedImage: UIImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
         UIGraphicsEndImageContext()
-        if processedImage != nil {
-            objc_setAssociatedObject(processedImage, &Associated.kObserverImage, 1, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
+        objc_setAssociatedObject(processedImage, &Associated.kObserverImage, 1, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         self.image = processedImage
     }
     
@@ -53,10 +43,10 @@ class CornerImageView: UIImageView {
     private func cornerRadiusAdvance(_ cornerRadius: CGFloat, rectCornerType: UIRectCorner) {
         self.cornerRadius = cornerRadius
         self.cornerPosition = rectCornerType
-        isRounding = false
-        if !isHadAddObserver {
-            addObserver(self, forKeyPath: "image", options: .new, context: nil)
-            isHadAddObserver = true
+        self.isRounding = false
+        if !self.isHadAddObserver {
+            self.addObserver(self, forKeyPath: "image", options: .new, context: nil)
+            self.isHadAddObserver = true
         }
         layoutIfNeeded()
     }
@@ -86,18 +76,15 @@ class CornerImageView: UIImageView {
         self.cornerPosition = cornerPositon
     }
     
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
-        
-        guard let contentImage: UIImage = self.image else {
-            return
-        }
+        guard let contentImage: UIImage = self.image else { return }
         self.cornerRadius(with: contentImage, cornerRadius: self.cornerRadius, rectCornerType: self.cornerPosition!)
     }
     
     deinit {
-        if isHadAddObserver {
-            removeObserver(self, forKeyPath: "image")
+        if self.isHadAddObserver {
+            self.removeObserver(self, forKeyPath: "image")
         }
     }
 
